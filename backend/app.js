@@ -1,24 +1,128 @@
+//MONGO DB PW: yv4BdBeQVGPtnpJt
+//MONGO DB: mongodb+srv://kenny:<password>@cluster0-3jtpa.mongodb.net/test?retryWrites=true&w=majority
+
 const express = require("express");
+const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
+
+const Thing = require("./models/thing");
 
 const app = express();
 
+mongoose
+  .connect(
+    "mongodb+srv://kenny:yv4BdBeQVGPtnpJt@cluster0-3jtpa.mongodb.net/test?retryWrites=true&w=majority"
+  )
+  .then(() => {
+    console.log("Connection to the Mongodb Atlas Successful!");
+  })
+  .catch(error => {
+    console.log("unable to connect to database");
+    console.log(error);
+  });
+
 app.use((req, res, next) => {
-  console.log("Request Recieved!");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content, Accept, Content-Type, Authorization"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+  );
   next();
 });
 
-app.use((req, res, next) => {
-  res.status(201);
-  next();
+app.use(bodyParser.json());
+
+app.post("/api/stuff", (req, res, next) => {
+  const thing = new Thing({
+    title: req.body.title,
+    description: req.body.description,
+    imageUrl: req.body.imageUrl,
+    price: req.body.price,
+    userId: req.body.userId
+  });
+  thing
+    .save()
+    .then(() => {
+      res.status(201).json({
+        message: "Post saved successfully!"
+      });
+    })
+    .catch(error => {
+      res.status(400).json({
+        error: error
+      });
+    });
 });
 
-app.use((req, res, next) => {
-  res.json({ message: "Your request was successful" });
-  next();
+app.get("/api/stuff/:id", (req, res, next) => {
+  Thing.findOne({
+    _id: req.params.id
+  })
+    .then(thing => {
+      res.status(200).json(thing);
+    })
+    .catch(error => {
+      res.status(404).json({
+        error: error
+      });
+    });
 });
 
-app.use((req, res, next) => {
-  console.log("Request was received!");
+app.put("/api/stuff/:id", (req, res, next) => {
+  const thing = new Thing({
+    _id: req.params.id,
+    title: req.body.title,
+    description: req.body.description,
+    imageUrl: req.body.imageUrl,
+    price: req.body.price,
+    userId: req.body.userId
+  });
+  Thing.updateOne(
+    {
+      _id: req.params.id
+    },
+    thing
+  )
+    .then(() => {
+      res.status(201).json({
+        message: "Successfully Updated!!"
+      });
+    })
+    .catch(error => {
+      res.status(400).json({
+        error: error
+      });
+    });
+});
+
+app.delete("/api/stuff/:id", (req, res, next) => {
+  Thing.deleteOne({ _id: req.params.id })
+    .then(() => {
+      res.status(200).json({
+        message: "Deleted!"
+      });
+    })
+    .catch(error => {
+      res.status(400).json({
+        error: error
+      });
+    });
+});
+
+app.use("/api/stuff", (req, res, next) => {
+  Thing.find()
+    .then(things => {
+      res.status(200).json(things);
+    })
+    .catch(error => {
+      res.status(400).json({
+        error: error
+      });
+    });
 });
 
 module.exports = app;
